@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Link, useNavigate, useLocation } from 'react-router-dom';
+import { useState } from 'react';
+import { BrowserRouter as Router, Routes, Route, Link, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import Home from './pages/Home';
 import CreateProject from './pages/CreateProject';
 import ProjectDetail from './pages/ProjectDetail';
@@ -47,20 +47,16 @@ function Navigation({ user, handleSignOut }) {
 }
 
 function App() {
-  const [user, setUser] = useState(null);
-
-  useEffect(() => {
-    // Check local storage for mock auth session
+  // Synchronously evaluate login state from localStorage so the React components have it immediately on first render.
+  const [user, setUser] = useState(() => {
     const savedUser = localStorage.getItem('coderescue_user');
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
-    }
-  }, []);
+    return savedUser ? JSON.parse(savedUser) : null;
+  });
 
   const handleSignOut = () => {
     localStorage.removeItem('coderescue_user');
     setUser(null);
-    window.location.href = '/';
+    window.location.href = '/signin';
   };
 
   return (
@@ -70,11 +66,14 @@ function App() {
 
         <main>
           <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/create" element={<CreateProject />} />
-            <Route path="/project/:id" element={<ProjectDetail />} />
-            <Route path="/signin" element={<SignIn setUser={setUser} />} />
-            <Route path="/signup" element={<SignUp setUser={setUser} />} />
+            {/* Protected Routes: Users must be logged in to view these core features */}
+            <Route path="/" element={user ? <Home /> : <Navigate to="/signin" replace />} />
+            <Route path="/create" element={user ? <CreateProject /> : <Navigate to="/signin" replace />} />
+            <Route path="/project/:id" element={user ? <ProjectDetail /> : <Navigate to="/signin" replace />} />
+            
+            {/* Auth Routes: Hide these from authenticated users by redirecting them to Home */}
+            <Route path="/signin" element={user ? <Navigate to="/" replace /> : <SignIn setUser={setUser} />} />
+            <Route path="/signup" element={user ? <Navigate to="/" replace /> : <SignUp setUser={setUser} />} />
           </Routes>
         </main>
       </div>
