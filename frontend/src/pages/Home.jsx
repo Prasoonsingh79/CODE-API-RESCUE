@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Star, ArrowRight, Code } from 'lucide-react';
+import { Star, ArrowRight, Code, Search } from 'lucide-react';
 
 export default function Home() {
   const [projects, setProjects] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -24,6 +25,11 @@ export default function Home() {
         setLoading(false);
       });
   }, []);
+
+  const filteredProjects = projects.filter(p => 
+    p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    p.description.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   if (loading) {
     return (
@@ -47,18 +53,37 @@ export default function Home() {
       <div style={{marginBottom: '3rem'}}>
         <h1 className="page-title">Discover Solutions</h1>
         <p className="page-subtitle">Explore code snippets, architectural drafts, and algorithms shared by the community.</p>
+        
+        {/* Step 1: Integrated Search Bar Feature */}
+        <div style={{position: 'relative', maxWidth: '600px'}}>
+          <Search size={20} color="var(--text-muted)" style={{position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)'}} />
+          <input 
+            type="text" 
+            placeholder="Search projects by name or description..." 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={{
+              width: '100%', 
+              paddingLeft: '3rem', 
+              borderRadius: '30px', 
+              paddingRight: '1rem',
+              background: 'rgba(0,0,0,0.4)',
+              border: '1px solid var(--border-color)'
+            }}
+          />
+        </div>
       </div>
 
-      {projects.length === 0 ? (
+      {filteredProjects.length === 0 ? (
         <div className="card" style={{textAlign: 'center', padding: '4rem 2rem', alignItems: 'center'}}>
           <Code size={48} color="var(--text-muted)" style={{marginBottom: '1rem'}} />
           <h3 style={{fontSize: '1.5rem', marginBottom: '0.5rem'}}>No projects found</h3>
-          <p style={{color: 'var(--text-muted)', marginBottom: '2rem'}}>The repository is empty. Be the first to deploy and share your code!</p>
-          <Link to="/create" className="btn">Create Your First Project</Link>
+          <p style={{color: 'var(--text-muted)', marginBottom: '2rem'}}>The repository is empty or your search had no matches.</p>
+          <Link to="/create" className="btn">Deploy Code</Link>
         </div>
       ) : (
         <div className="projects-grid">
-          {projects.map(project => (
+          {filteredProjects.map(project => (
              <div className="card" key={project._id}>
                 <h3 className="card-title">{project.name}</h3>
                 <p className="card-desc">
