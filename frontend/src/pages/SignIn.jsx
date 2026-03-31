@@ -17,7 +17,7 @@ export default function SignIn({ setUser }) {
       const mockUser = { username: formData.email.split('@')[0], token: 'mock-jwt-token-123' };
       localStorage.setItem('coderescue_user', JSON.stringify(mockUser));
       setUser(mockUser);
-      navigate('/');
+      navigate('/home');
     }, 1000);
   };
 

@@ -17,7 +17,7 @@ export default function SignUp({ setUser }) {
       const mockUser = { username: formData.username, token: 'mock-jwt-token-789' };
       localStorage.setItem('coderescue_user', JSON.stringify(mockUser));
       setUser(mockUser);
-      navigate('/');
+      navigate('/home');
     }, 1200);
   };
 

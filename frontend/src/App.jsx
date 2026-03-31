@@ -10,23 +10,24 @@ import { Code2, LogOut, User, Compass, LayoutDashboard, Trophy } from 'lucide-re
 // Main Navigation Component
 function Navigation({ user, handleSignOut }) {
   const location = useLocation();
-  const isAuthPage = location.pathname === '/signin' || location.pathname === '/signup';
+  // Hide navbar uniquely when sitting exactly on the landing sign-in or register page
+  const isAuthPage = location.pathname === '/' || location.pathname === '/signup';
 
-  if (isAuthPage) return null; // Hide navbar on login/register pages
+  if (isAuthPage) return null;
 
   return (
     <header className="navbar">
-      <Link to="/" className="logo">
+      <Link to="/home" className="logo">
         <Code2 size={28} color="#6366f1" />
         CodeRescue
       </Link>
       <div className="nav-links">
-        <Link to="/" className="nav-link" style={{display: 'flex', alignItems: 'center', gap: '0.4rem'}}><Compass size={18}/> Explore</Link>
-        <Link to="/" className="nav-link" style={{display: 'flex', alignItems: 'center', gap: '0.4rem'}}><Trophy size={18}/> Leaderboard</Link>
+        <Link to="/home" className="nav-link" style={{display: 'flex', alignItems: 'center', gap: '0.4rem'}}><Compass size={18}/> Explore</Link>
+        <Link to="/home" className="nav-link" style={{display: 'flex', alignItems: 'center', gap: '0.4rem'}}><Trophy size={18}/> Leaderboard</Link>
         
         {user ? (
           <>
-            <Link to="/" className="nav-link" style={{display: 'flex', alignItems: 'center', gap: '0.4rem'}}><LayoutDashboard size={18}/> My Workspace</Link>
+            <Link to="/home" className="nav-link" style={{display: 'flex', alignItems: 'center', gap: '0.4rem'}}><LayoutDashboard size={18}/> My Workspace</Link>
             <Link to="/create" className="btn" style={{marginLeft: '0.5rem'}}>Deploy Code</Link>
             <div style={{display: 'flex', alignItems: 'center', gap: '1rem', marginLeft: '1rem', borderLeft: '1px solid var(--border-color)', paddingLeft: '1.5rem'}}>
                <span style={{color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: '500'}}><User size={16} color="var(--primary)"/> {user.username}</span>
@@ -37,7 +38,7 @@ function Navigation({ user, handleSignOut }) {
           </>
         ) : (
           <div style={{display: 'flex', alignItems: 'center', gap: '1rem', marginLeft: '1rem'}}>
-            <Link to="/signin" className="nav-link" style={{fontWeight: '600', color: 'var(--text-main)'}}>Sign In</Link>
+            <Link to="/" className="nav-link" style={{fontWeight: '600', color: 'var(--text-main)'}}>Sign In</Link>
             <Link to="/signup" className="btn">Sign Up Free</Link>
           </div>
         )}
@@ -47,7 +48,6 @@ function Navigation({ user, handleSignOut }) {
 }
 
 function App() {
-  // Synchronously evaluate login state from localStorage so the React components have it immediately on first render.
   const [user, setUser] = useState(() => {
     const savedUser = localStorage.getItem('coderescue_user');
     return savedUser ? JSON.parse(savedUser) : null;
@@ -56,7 +56,7 @@ function App() {
   const handleSignOut = () => {
     localStorage.removeItem('coderescue_user');
     setUser(null);
-    window.location.href = '/signin';
+    window.location.href = '/'; // Send directly to base signin page on logout!
   };
 
   return (
@@ -66,14 +66,14 @@ function App() {
 
         <main>
           <Routes>
-            {/* Protected Routes: Users must be logged in to view these core features */}
-            <Route path="/" element={user ? <Home /> : <Navigate to="/signin" replace />} />
-            <Route path="/create" element={user ? <CreateProject /> : <Navigate to="/signin" replace />} />
-            <Route path="/project/:id" element={user ? <ProjectDetail /> : <Navigate to="/signin" replace />} />
+            {/* Landing page is now explicitly the Sign In page! */}
+            <Route path="/" element={user ? <Navigate to="/home" replace /> : <SignIn setUser={setUser} />} />
+            <Route path="/signup" element={user ? <Navigate to="/home" replace /> : <SignUp setUser={setUser} />} />
             
-            {/* Auth Routes: Hide these from authenticated users by redirecting them to Home */}
-            <Route path="/signin" element={user ? <Navigate to="/" replace /> : <SignIn setUser={setUser} />} />
-            <Route path="/signup" element={user ? <Navigate to="/" replace /> : <SignUp setUser={setUser} />} />
+            {/* The rest of the platform is strictly shielded behind /home */}
+            <Route path="/home" element={user ? <Home /> : <Navigate to="/" replace />} />
+            <Route path="/create" element={user ? <CreateProject /> : <Navigate to="/" replace />} />
+            <Route path="/project/:id" element={user ? <ProjectDetail /> : <Navigate to="/" replace />} />
           </Routes>
         </main>
       </div>
