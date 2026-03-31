@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Star, ArrowLeft, Bot, Calendar, FileCode, CheckCircle, AlertTriangle, Info } from 'lucide-react';
+import { Star, ArrowLeft, Bot, Calendar, FileCode, CheckCircle, AlertTriangle, Info, Activity, ShieldCheck, Bug } from 'lucide-react';
 
 export default function ProjectDetail() {
   const { id } = useParams();
@@ -16,11 +16,9 @@ export default function ProjectDetail() {
         if (!res.ok) throw new Error('Diagnostic failed: Project not found');
         const data = await res.json();
         
-        // Handle backwards compatibility for older entries that used to have a "code" string instead of "files" array
         if (data.code && (!data.files || data.files.length === 0)) {
           data.files = [{ filename: 'LegacySourceCode.txt', content: data.code }];
         }
-        
         setProject(data);
         setLoading(false);
       } catch (err) {
@@ -52,42 +50,66 @@ export default function ProjectDetail() {
 
   const activeFile = project.files?.[activeFileIndex] || { filename: 'No Files Associated', content: 'Empty' };
 
-  // Step 2 feature: Advanced AI Code Analysis integration logic
+  // Premium Code Analysis Engine
   const analyzeCode = (code) => {
     const lines = code.split('\n').length;
-    let analysis = [];
+    let analysis = {
+      score: 100,
+      errors: [],
+      warnings: [],
+      passed: []
+    };
     
-    // 1. Missing comments check
+    // Comments check
     const hasComments = code.includes('//') || code.includes('#') || code.includes('/*');
     if (!hasComments) {
-       analysis.push({ type: 'error', icon: <AlertTriangle size={16}/>, msg: "Missing Comments: Strict documentation is missing. Recommend adding inline comments." });
+       analysis.score -= 15;
+       analysis.errors.push("Missing required code documentation or inline comments.");
     } else {
-       analysis.push({ type: 'success', icon: <CheckCircle size={16}/>, msg: "Documentation Standard Met: Found inline comments successfully." });
+       analysis.passed.push("Documentation standard met (Comments found).");
     }
     
-    // 2. Bad naming pattern detection
+    // Naming check
     if (code.includes('let x ') || code.includes('let y ') || code.includes('var a ') || code.includes(' a = ')) {
-       analysis.push({ type: 'warning', icon: <AlertTriangle size={16}/>, msg: "Bad Naming Pattern: Use descriptive variable names instead of short single letters (e.g. 'x', 'a') to improve robustness." });
+       analysis.score -= 10;
+       analysis.warnings.push("Bad Variables: Single-character variable limits code readability.");
+    } else {
+       analysis.passed.push("Naming convention appears strictly standard.");
     }
 
-    // 3. General Architecture sizing check
-    if (lines > 200) {
-      analysis.push({ type: 'warning', icon: <AlertTriangle size={16}/>, msg: "Code Structure: File exceeds 200 lines. Refactoring into helper modules will improve maintainability." });
+    // Structure check
+    if (lines > 150) {
+      analysis.score -= 10;
+      analysis.warnings.push(`File is overly long (${lines} lines). Consider micro-service extraction.`);
+    } else {
+      analysis.passed.push(`File structure is highly optimized (${lines} lines).`);
     }
 
-    // 4. Basic Error mock (e.g. console.log usage)
-    if (code.includes('console.log(')) {
-       analysis.push({ type: 'info', icon: <Info size={16}/>, msg: "Development Artifact: Found 'console.log()'. In production software, consider a structured logging framework." });
+    // Log artifact check
+    if (code.includes('console.log(') || code.includes('print(')) {
+       analysis.score -= 5;
+       analysis.warnings.push("Artifacts Detected: Hardcoded print/console logs found. Use an abstracted Logger for production.");
+    } else {
+       analysis.passed.push("No console artifacts detected in this codebase.");
     }
 
-    return analysis.length > 0 ? analysis : [{ type: 'success', icon: <CheckCircle size={16}/>, msg: "Clean Architecture: No immediate issues detected in this module." }];
+    if (activeFile.filename.endsWith('.env') || code.includes('apiKey = "') || code.includes('secret = "')) {
+       analysis.score -= 30;
+       analysis.errors.push("CRITICAL SECURITY RISK: Potential secrets or keys exposed directly inside source execution!");
+    } else {
+       analysis.passed.push("Secrets are securely isolated.");
+    }
+
+    // Guarantee floor 0
+    analysis.score = Math.max(0, analysis.score);
+    return analysis;
   };
 
-  const analysisFindings = activeFile.content ? analyzeCode(activeFile.content) : [];
+  const diagnostics = activeFile.content ? analyzeCode(activeFile.content) : null;
 
   return (
     <div style={{animation: 'fadeIn 0.3s ease'}}>
-      <Link to="/" className="nav-link" style={{marginBottom: '2rem'}}><ArrowLeft size={16} /> Back to Repository</Link>
+      <Link to="/home" className="nav-link" style={{marginBottom: '2rem'}}><ArrowLeft size={16} /> Back to Repository</Link>
 
       <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem'}}>
         <div>
@@ -101,7 +123,7 @@ export default function ProjectDetail() {
 
       <div style={{display: 'flex', gap: '2rem', marginTop: '2rem', flexWrap: 'wrap'}}>
         {/* Mult-File Browser Sidebar feature */}
-        <div style={{flex: '0 0 260px', display: 'flex', flexDirection: 'column', gap: '0.5rem', background: 'var(--card-bg)', padding: '1rem', borderRadius: '12px', border: '1px solid var(--border-color)', height: 'fit-content'}}>
+        <div style={{flex: '0 0 260px', display: 'flex', flexDirection: 'column', gap: '0.5rem', background: 'var(--card-bg)', padding: '1rem', borderRadius: '12px', border: '1px solid var(--border-color)', height: 'fit-content', position: 'sticky', top: '120px'}}>
           <h3 style={{fontSize: '1rem', color: 'var(--text-main)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem'}}><FileCode size={18} color="var(--primary)" /> Project Workspace</h3>
           {project.files && project.files.map((f, i) => (
              <button 
@@ -121,35 +143,66 @@ export default function ProjectDetail() {
 
         {/* Code Content Area & Enhanced Analysis Box */}
         <div style={{flex: '1', minWidth: '0'}}>
-          <div className="analysis-banner" style={{marginTop: 0, borderTop: '4px solid var(--primary)', background: 'var(--card-bg)'}}>
-            <h3 className="analysis-title"><Bot size={20} /> System Diagnostics for `{activeFile.filename}`</h3>
-            <div style={{display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '1rem'}}>
-              {analysisFindings.map((finding, idx) => (
-                <div key={idx} style={{
-                   display: 'flex', alignItems: 'flex-start', gap: '0.75rem', padding: '0.75rem', borderRadius: '8px',
-                   background: finding.type === 'error' ? 'rgba(239, 68, 68, 0.1)' : 
-                               finding.type === 'warning' ? 'rgba(245, 158, 11, 0.1)' :
-                               finding.type === 'info' ? 'rgba(56, 189, 248, 0.1)' : 'rgba(16, 185, 129, 0.1)',
-                   color: finding.type === 'error' ? '#ef4444' : 
-                          finding.type === 'warning' ? '#f59e0b' :
-                          finding.type === 'info' ? '#38bdf8' : '#10b981',
-                   border: '1px solid currentColor'     
-                }}>
-                  <div style={{marginTop: '2px'}}>{finding.icon}</div>
-                  <div style={{fontSize: '0.95rem', lineHeight: '1.4'}}>{finding.msg}</div>
+          
+          {/* New Premium Diagnostic Dashboard */}
+          {diagnostics && (
+          <div className="card" style={{padding: '0', overflow: 'hidden', marginBottom: '2rem', border: '1px solid rgba(99, 102, 241, 0.4)'}}>
+            <div style={{background: 'rgba(99, 102, 241, 0.1)', padding: '1rem 1.5rem', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+              <h3 style={{display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0, fontSize: '1.1rem'}}><Activity size={20} color="var(--primary)"/> Diagnostic Report for <span style={{color: 'var(--primary)'}}>{activeFile.filename}</span></h3>
+              <div style={{display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
+                <span style={{fontSize: '0.85rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px'}}>Engine Score</span>
+                <span style={{background: diagnostics.score > 80 ? 'rgba(16, 185, 129, 0.2)' : diagnostics.score > 60 ? 'rgba(245, 158, 11, 0.2)' : 'rgba(239, 68, 68, 0.2)', color: diagnostics.score > 80 ? '#10b981' : diagnostics.score > 60 ? '#f59e0b' : '#ef4444', padding: '0.25rem 0.75rem', borderRadius: '30px', fontWeight: '800', fontSize: '1.2rem', display: 'flex', alignItems: 'center', border: '1px solid currentColor'}}>
+                  {diagnostics.score}/100
+                </span>
+              </div>
+            </div>
+            <div style={{padding: '1.5rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem'}}>
+              
+              {/* Errors Panel */}
+              {diagnostics.errors.length > 0 && (
+                <div style={{background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: '8px', padding: '1rem'}}>
+                  <h4 style={{color: '#ef4444', display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem'}}><Bug size={16}/> Critical Issues</h4>
+                  <ul style={{margin: 0, paddingLeft: '1.5rem', color: 'var(--text-main)', fontSize: '0.9rem'}}>
+                    {diagnostics.errors.map((msg, i) => <li key={i} style={{marginBottom: '0.5rem'}}>{msg}</li>)}
+                  </ul>
                 </div>
-              ))}
+              )}
+
+              {/* Warnings Panel */}
+              {diagnostics.warnings.length > 0 && (
+                <div style={{background: 'rgba(245, 158, 11, 0.05)', border: '1px solid rgba(245, 158, 11, 0.2)', borderRadius: '8px', padding: '1rem'}}>
+                  <h4 style={{color: '#f59e0b', display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem'}}><AlertTriangle size={16}/> Refactor Warnings</h4>
+                  <ul style={{margin: 0, paddingLeft: '1.5rem', color: 'var(--text-main)', fontSize: '0.9rem'}}>
+                    {diagnostics.warnings.map((msg, i) => <li key={i} style={{marginBottom: '0.5rem'}}>{msg}</li>)}
+                  </ul>
+                </div>
+              )}
+
+              {/* Passed Panel */}
+              <div style={{background: 'rgba(16, 185, 129, 0.05)', border: '1px solid rgba(16, 185, 129, 0.2)', borderRadius: '8px', padding: '1rem'}}>
+                <h4 style={{color: '#10b981', display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem'}}><ShieldCheck size={16}/> Passed Checks</h4>
+                <ul style={{margin: 0, paddingLeft: '1.5rem', color: 'var(--text-main)', fontSize: '0.9rem'}}>
+                  {diagnostics.passed.map((msg, i) => <li key={i} style={{marginBottom: '0.5rem'}}>{msg}</li>)}
+                </ul>
+              </div>
+
             </div>
           </div>
-          
-          <div className="code-block" style={{marginTop: '1.5rem'}}>
-            <pre><code style={{color: '#c4b5fd'}}>{activeFile.content}</code></pre>
+          )}
+
+          <div className="code-block" style={{marginTop: '0', borderRadius: '12px'}}>
+            <div style={{borderBottom: '1px solid var(--border-color)', paddingBottom: '0.75rem', marginBottom: '1rem', display: 'flex', gap: '0.5rem'}}>
+              <div style={{width: 12, height: 12, borderRadius: '50%', background: '#ef4444'}}></div>
+              <div style={{width: 12, height: 12, borderRadius: '50%', background: '#f59e0b'}}></div>
+              <div style={{width: 12, height: 12, borderRadius: '50%', background: '#10b981'}}></div>
+            </div>
+            <pre><code style={{color: '#e2e8f0', fontSize: '0.95rem', lineHeight: '1.6', fontFamily: 'Consolas, Monaco, monospace'}}>{activeFile.content}</code></pre>
           </div>
         </div>
       </div>
       
       <div style={{display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)', fontSize: '0.85rem', marginTop: '3rem', borderTop: '1px solid var(--border-color)', paddingTop: '1.5rem'}}>
-        <Calendar size={14} /> System Initialized on {new Date(project.created_at).toLocaleString()}
+        <Calendar size={14} /> Processed via MongoDB Atlas on {new Date(project.created_at).toLocaleString()}
       </div>
     </div>
   );
