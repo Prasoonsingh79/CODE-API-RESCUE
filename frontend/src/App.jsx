@@ -5,6 +5,7 @@ import CreateProject from './pages/CreateProject';
 import ProjectDetail from './pages/ProjectDetail';
 import SignIn from './pages/SignIn';
 import SignUp from './pages/SignUp';
+import SignOut from './pages/SignOut';
 import Explore from './pages/Explore';
 import Leaderboard from './pages/Leaderboard';
 import Workspace from './pages/Workspace';
@@ -15,7 +16,7 @@ import { Code2, LogOut, User, Compass, LayoutDashboard, Trophy, Github } from 'l
 function Navigation({ user, handleSignOut }) {
   const location = useLocation();
   // Hide navbar uniquely when sitting exactly on the landing sign-in or register page
-  const isAuthPage = location.pathname === '/' || location.pathname === '/signup';
+  const isAuthPage = location.pathname === '/' || location.pathname === '/signup' || location.pathname === '/signout';
 
   if (isAuthPage) return null;
 
@@ -36,9 +37,9 @@ function Navigation({ user, handleSignOut }) {
             <Link to="/create" className="btn" style={{marginLeft: '0.5rem'}}>Deploy Code</Link>
             <div style={{display: 'flex', alignItems: 'center', gap: '1rem', marginLeft: '1rem', borderLeft: '1px solid var(--border-color)', paddingLeft: '1.5rem'}}>
                <span style={{color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: '500'}}><User size={16} color="var(--primary)"/> {user.username}</span>
-               <button onClick={handleSignOut} className="btn-secondary" style={{display: 'flex', alignItems: 'center', gap: '0.4rem', border: '1px solid rgba(255,255,255,0.1)', padding: '0.4rem 0.75rem', borderRadius: '8px', background: 'rgba(0,0,0,0.3)', color: 'var(--text-muted)', cursor: 'pointer'}}>
+               <Link to="/signout" className="btn-secondary" style={{display: 'flex', alignItems: 'center', gap: '0.4rem', border: '1px solid rgba(255,255,255,0.1)', padding: '0.4rem 0.75rem', borderRadius: '8px', background: 'rgba(0,0,0,0.3)', color: 'var(--text-muted)', textDecoration: 'none'}}>
                  <LogOut size={16} /> Sign Out
-               </button>
+               </Link>
             </div>
           </>
         ) : (
@@ -83,6 +84,7 @@ function App() {
             <Route path="/workspace" element={user ? <Workspace user={user} /> : <Navigate to="/" replace />} />
             <Route path="/create" element={user ? <CreateProject /> : <Navigate to="/" replace />} />
             <Route path="/project/:id" element={user ? <ProjectDetail /> : <Navigate to="/" replace />} />
+            <Route path="/signout" element={<SignOut />} />
           </Routes>
         </main>
       </div>
